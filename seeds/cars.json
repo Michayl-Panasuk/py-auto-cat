@@ -1,0 +1,62 @@
+[
+  {
+    "brand": 1,
+    "model": 1,
+    "company": 1,
+    "price": 100000500
+  },
+  {
+    "brand": 1,
+    "model": 2,
+    "company": 1,
+    "price": 100000500
+  },
+  {
+    "brand": 1,
+    "model": 3,
+    "company": 1,
+    "price": 100000500
+  },
+  {
+    "brand": 1,
+    "model": 3,
+    "company": 1,
+    "price": 10500
+  },
+  {
+    "brand": 2,
+    "model": 4,
+    "company": 1,
+    "price": 100000500
+  },
+  {
+    "brand": 2,
+    "model": 5,
+    "company": 1,
+    "price": 100000500
+  },
+  {
+    "brand": 2,
+    "model": 5,
+    "company": 1,
+    "price": 500000500
+  },
+  {
+    "brand": 3,
+    "model": 6,
+    "company": 1,
+    "price": 100000500
+  },
+  {
+    "brand": 3,
+    "model": 6,
+    "company": 1,
+    "price": 10000500
+  },
+  {
+    "brand": 3,
+    "model": 7,
+    "company": 1,
+    "price": 100000500
+  }
+]

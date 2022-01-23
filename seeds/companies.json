@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "Company name",
+    "contact_person": "Contact name",
+    "phone": "+31111",
+    "address": "Address Line 1"
+  },
+  {
+    "id": 2,
+    "name": "Company name 1",
+    "contact_person": "Contact name 1",
+    "phone": "+312222",
+    "address": "Address Line 2"
+  }
+]
