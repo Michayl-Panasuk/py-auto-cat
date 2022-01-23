@@ -1,42 +1,16 @@
 from tkinter import ttk  # підключаємо модуль інтерфейсів
 from tkinter import *
+import tkinter
+from tkinter import filedialog as fd
+
 from typing import Any, List
 
 from peewee import ModelSelect
 
 import controller
-import validators
-
-def safe_cast(val, to_type, default=None):
-    try:
-        return to_type(val)
-    except (ValueError, TypeError):
-        return default
-
-def items_to_names(items):
-    newArr = []
-    for item in items:
-        newArr.append(item.name)
-    return newArr
+import helpers as h
 
 
-def filterArr(items, predicate):
-    newArr = []
-    i = 0
-    for item in items:
-        if predicate(item):
-            newArr.append(item.name)
-        i += 1
-    return newArr
-
-
-def findInArray(items, predicate):
-    i = 0
-    for item in items:
-        if predicate(item):
-            return item
-        i += 1
-    return
 
 class CarForm:
     brandModel: StringVar
@@ -65,6 +39,8 @@ class App:
     models: Any
     companies: Any
 
+    dumpFormat = [('Json File', '*.json')];
+
     def __init__(self, window, ctrl: controller.MainCtrl):
         # s = ttk.Style()
         # s.configure('TMenubutton', background='green')
@@ -73,11 +49,33 @@ class App:
         self.ctrl = ctrl
         self.wind.title('List')
 
+
+       
+        ttk.Button(text='Import', command=self.import_data).grid(
+            row=6, column=0, sticky=W + E)
+
+        ttk.Button(text='Export', command=self.dump_data).grid(
+            row=6, column=1, sticky=W + E)
+
         self.get_initial_data()
         self.create_form_widgets()
         self.create_table_widget()
         self.create_misc_widgets()
         self.fill_cars_table()
+
+
+    def dump_data(self):
+        f = fd.asksaveasfile(title='Save Dump', defaultextension='.json');
+        if f is None: 
+            return
+        self.ctrl.export_from_current_db(f)
+        # f =  filedialog.FileDialog.(mode='w', defaultextension='.txt')
+    def import_data(self):
+        f = fd.askopenfile(title='Select Dump');
+        if f is None:
+            return
+        self.ctrl.import_to_current_db(f)
+        # f =  filedialog.FileDialog.(mode='w', defaultextension=".txt")
        
 
     def create_form_widgets(self):
@@ -88,7 +86,7 @@ class App:
         # # Brand Input
         Label(self.frame, text='Brand: ').grid(row=1, column=0)
         self.brandModel = StringVar(self.frame)
-        self.brandCtrl = OptionMenu(self.frame, self.brandModel, *items_to_names(
+        self.brandCtrl = OptionMenu(self.frame, self.brandModel, *h.items_to_names(
             self.brands), command=lambda *args: self.update_options_list(self.modelCtrl, self.carModelModel, self.pick_car_models(self.brandModel)))
         self.brandCtrl.grid(row=1, column=1)
         
@@ -104,7 +102,7 @@ class App:
         Label(self.frame, text='Company: ').grid(row=3, column=0)
         self.companyModel = StringVar(self.frame)
         self.companyCtrl = OptionMenu(
-            self.frame, self.companyModel, *items_to_names(self.companies))
+            self.frame, self.companyModel, *h.items_to_names(self.companies))
         self.companyCtrl.grid(row=3, column=1)
 
         # Pirce Input
@@ -124,10 +122,10 @@ class App:
         self.tree.heading('price', text='Price', anchor=CENTER)
 
         # Buttons
-        ttk.Button(text='Delete', command=self.delete_product).grid(
-            row=5, column=0, sticky=W + E)
         ttk.Button(text='Edit', command=self.edit_product).grid(
             row=5, column=1, sticky=W + E)
+        ttk.Button(text='Delete', command=self.delete_product).grid(
+            row=5, column=0, sticky=W + E)
 
     def create_misc_widgets(self):
         # Button Add Product
@@ -239,9 +237,9 @@ class App:
 
     def pick_car_models(self, brandModel):
         newBrand = brandModel.get()
-        selectedBrand = findInArray(
+        selectedBrand = h.findInArray(
             self.brands, lambda item: item.name == newBrand)
-        newModelsList = filterArr(self.models, lambda item: item.brand.id == selectedBrand.id)
+        newModelsList = h.filterArr(self.models, lambda item: item.brand.id == selectedBrand.id)
 
         return newModelsList
 
@@ -259,7 +257,7 @@ class App:
          # # Brand Input
         Label(host, text='Brand: ').grid(row=1, column=0)
         form.brandModel = StringVar(host)
-        form.brandCtrl = OptionMenu(host, form.brandModel, *items_to_names(
+        form.brandCtrl = OptionMenu(host, form.brandModel, *h.items_to_names(
             self.brands), command=lambda *args: self.update_options_list(form.modelCtrl, form.carModelModel, self.pick_car_models(form.brandModel)))
         form.brandCtrl.grid(row=1, column=1)
 
@@ -274,7 +272,7 @@ class App:
         Label(host, text='Company: ').grid(row=3, column=0)
         form.companyModel = StringVar(host)
         form.companyCtrl = OptionMenu(
-            host, form.companyModel, *items_to_names(self.companies))
+            host, form.companyModel, *h.items_to_names(self.companies))
         form.companyCtrl.grid(row=3, column=1)
 
         # Pirce Input
@@ -297,15 +295,15 @@ class App:
             'brand': carForm.brandModel.get(),
             'model': carForm.carModelModel.get(),
             'company': carForm.companyModel.get(),
-            'price': safe_cast(carForm.priceCtrl.get(), int, 0)
+            'price': h.safe_cast(carForm.priceCtrl.get(), int, 0)
         }
         return rawValue;
 
     def normalize_form_value(self, rawValue):
         fValue = {
-            'brand': findInArray(self.brands, lambda item: item.name == rawValue['brand']).id,
-            'model': findInArray(self.models, lambda item: item.name == rawValue['model']).id,
-            'company': findInArray(self.companies, lambda item: item.name == rawValue['company']).id,
+            'brand': h.findInArray(self.brands, lambda item: item.name == rawValue['brand']).id,
+            'model': h.findInArray(self.models, lambda item: item.name == rawValue['model']).id,
+            'company': h.findInArray(self.companies, lambda item: item.name == rawValue['company']).id,
             'price': rawValue['price']
         }
         return fValue;
