@@ -1,0 +1,13 @@
+{
+  "masterDB": "SQLite",
+  "SQLite" : {
+    "path": "automotive.db"
+  },
+  "PostgreSQL": {
+    "name": "automotive",
+    "user": "postgres",
+    "password": "secret",
+    "host": "127.0.0.1",
+    "port": "5432"
+  }
+}

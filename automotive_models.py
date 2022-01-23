@@ -1,7 +1,15 @@
 from peewee import *
+import json
 import datetime
 
-db = SqliteDatabase('automotive.db', pragmas={'foreign_keys': 1})
+config = json.load(open("config.json"));
+db = None;
+if config['masterDB'] == "SQLite":
+    db = SqliteDatabase(config['SQLite']['path'], pragmas={'foreign_keys': 1})
+else:
+    db = PostgresqlDatabase(config['PostgreSQL'])
+     
+
 
 
 class BaseModel(Model):
