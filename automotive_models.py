@@ -2,12 +2,12 @@ from peewee import *
 import json
 import datetime
 
-config = json.load(open("config.json"));
+config = json.load(open('config.json'));
 db = None;
-if config['masterDB'] == "SQLite":
+if config['masterDB'] == 'SQLite':
     db = SqliteDatabase(config['SQLite']['path'], pragmas={'foreign_keys': 1})
 else:
-    db = PostgresqlDatabase(config['PostgreSQL'])
+    db = PostgresqlDatabase(**config['PostgreSQL'])
      
 
 
@@ -37,8 +37,8 @@ class Company(BaseModel):
 class Car(BaseModel):
     brand = ForeignKeyField(CarBrand, backref='car')
     model = ForeignKeyField(CarModel, backref='car')
-    price = DecimalField(decimal_places=2, constraints=[
-                         Check('price > 0')], auto_round=True)
+    price = FloatField(constraints=[
+                         Check('price > 0')])
     created_at = DateTimeField(default=datetime.datetime.now, index=True)
 
     company = ForeignKeyField(Company)

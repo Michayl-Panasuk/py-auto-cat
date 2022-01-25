@@ -37,3 +37,11 @@ def findInArray(items, predicate):
             return item
         i += 1
     return
+
+def safeget(dct, *keys):
+    for key in keys:
+        try:
+            dct = dct[key]
+        except (KeyError, TypeError):
+            return None
+    return dct

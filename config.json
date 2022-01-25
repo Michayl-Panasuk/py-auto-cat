@@ -1,10 +1,10 @@
 {
-  "masterDB": "SQLite",
+  "masterDB": "PostgreSQL",
   "SQLite" : {
     "path": "automotive.db"
   },
   "PostgreSQL": {
-    "name": "automotive",
+    "database": "automotive",
     "user": "postgres",
     "password": "secret",
     "host": "127.0.0.1",
