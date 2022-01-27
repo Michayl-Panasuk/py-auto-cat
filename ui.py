@@ -11,7 +11,6 @@ import controller
 import helpers as h
 
 
-
 class CarForm:
     brandModel: StringVar
     carModelModel: StringVar
@@ -39,18 +38,22 @@ class App:
     models: Any
     companies: Any
 
-    dumpFormat = [('Json File', '*.json')];
+    q = {
+        'filterParams': {},
+        'sort': None
+    }
+
+    headings = ('id', 'brand', 'model',
+                'company', 'price', 'created_at')
 
     def __init__(self, window, ctrl: controller.MainCtrl):
         # s = ttk.Style()
         # s.configure('TMenubutton', background='green')
         # Запуск вікна
-        self.wind = window
+        self.window = window
         self.ctrl = ctrl
-        self.wind.title('List')
+        self.window.title('List')
 
-
-       
         ttk.Button(text='Import', command=self.import_data).grid(
             row=6, column=0, sticky=W + E)
 
@@ -63,24 +66,24 @@ class App:
         self.create_misc_widgets()
         self.fill_cars_table()
 
-
     def dump_data(self):
-        f = fd.asksaveasfile(title='Save Dump', defaultextension='.json');
-        if f is None: 
+        f = fd.asksaveasfile(title='Save Dump', defaultextension='.json')
+        if f is None:
             return
         self.ctrl.export_from_current_db(f)
         # f =  filedialog.FileDialog.(mode='w', defaultextension='.txt')
+
     def import_data(self):
-        f = fd.askopenfile(title='Select Dump');
+        f = fd.askopenfile(title='Select Dump')
         if f is None:
             return
         self.ctrl.import_to_current_db(f)
         # f =  filedialog.FileDialog.(mode='w', defaultextension=".txt")
-       
 
     def create_form_widgets(self):
         # Створюємо фрейм
-        self.frame = LabelFrame(self.wind, text='Add new car')
+        self.frame = LabelFrame(self.window, text='Add new car')
+        self.frame.config(bg='white')
         self.frame.grid(row=0, column=0, columnspan=3, pady=20)
 
         # # Brand Input
@@ -89,7 +92,6 @@ class App:
         self.brandCtrl = OptionMenu(self.frame, self.brandModel, *h.items_to_names(
             self.brands), command=lambda *args: self.update_options_list(self.modelCtrl, self.carModelModel, self.pick_car_models(self.brandModel)))
         self.brandCtrl.grid(row=1, column=1)
-        
 
         # Model Input
         Label(self.frame, text='Model: ').grid(row=2, column=0)
@@ -112,14 +114,18 @@ class App:
 
     def create_table_widget(self):
         # Table
-        columns = ('id', 'brand_name', 'model_name', 'company_name', 'price')
-        self.tree = ttk.Treeview(height=10, columns=columns)
+
+        self.tree = ttk.Treeview(height=10, columns=self.headings)
         self.tree.grid(row=4, column=0, columnspan=2)
-        self.tree.heading('id', text='Id', anchor=CENTER)
-        self.tree.heading('brand_name', text='Brand', anchor=CENTER)
-        self.tree.heading('model_name', text='Model', anchor=CENTER)
-        self.tree.heading('company_name', text='Company', anchor=CENTER)
-        self.tree.heading('price', text='Price', anchor=CENTER)
+        self.tree.heading(self.headings[0], text='Id', anchor=CENTER)
+        self.tree.heading(self.headings[1], text='Brand', command=lambda **args:  self.open_filter_modal(
+            self.headings[1], self.ctrl.get_all_brands(), self.fill_cars_table), anchor=CENTER)
+        self.tree.heading(self.headings[2], text='Model', anchor=CENTER)
+        self.tree.heading(self.headings[3], text='Company', anchor=CENTER)
+        self.tree.heading(self.headings[4], text='Price', anchor=CENTER,
+                          command=lambda **args: self.set_sort(self.headings[4]))
+        self.tree.heading(self.headings[5], text='Created', anchor=CENTER,
+                          command=lambda **args: self.set_sort(self.headings[5]))
 
         # Buttons
         ttk.Button(text='Edit', command=self.edit_product).grid(
@@ -136,6 +142,25 @@ class App:
         self.message = Label(text='', fg='red')
         self.message.grid(row=3, column=0, columnspan=2, sticky=W + E)
 
+    def open_filter_modal(self, name, options, cb=None):
+        pop = Toplevel(self.window)
+        pop.title('Select')
+        pop.geometry('600x150')
+        pop.config(bg='white')
+        # Create a Label Text
+        label = Label(pop, text='Filter option for ' + name)
+        label.pack(pady=20)
+        # Add a Frame
+        frame = Frame(pop)
+        frame.pack(pady=10)
+
+        def add_option(option, i):
+            button = Button(frame, text=option.name, command=lambda: (
+                self.set_filter(name, option.id), pop.destroy()), foreground='#000')
+            button.grid(row=0, column=i, sticky=W)
+
+        h.forEach(options, add_option);
+
     def get_initial_data(self):
         self.cars = self.ctrl.get_cars()
         self.brands = self.ctrl.get_all_brands()
@@ -150,9 +175,9 @@ class App:
             self.tree.delete(element)
 
         mapped = []
-        for row in self.ctrl.get_cars():
+        for row in self.ctrl.get_cars(**self.q):
             mapped.append((row.id, row.brand.name, row.model.name,
-                          row.company.name, row.price))
+                          row.company.name, row.price, row.created_at))
 
         # filling data
         for row in mapped:
@@ -160,20 +185,18 @@ class App:
 
     # User Input Validation
     def check_form(self, form):
-        fValue = self.pick_form_value(form);
+        fValue = self.pick_form_value(form)
         for k in ('model', 'brand', 'company'):
             if len(fValue[k]) == 0:
                 return False
         if fValue['price'] <= 0:
-             return False
+            return False
         return True
-
-   
 
     def add_car(self):
         if self.check_form(self):
-            
-            fValue = self.normalize_form_value(self.pick_form_value(self));
+
+            fValue = self.normalize_form_value(self.pick_form_value(self))
 
             self.ctrl.create_car(fValue)
 
@@ -192,7 +215,7 @@ class App:
             self.message['text'] = 'Select car in list'
             return
         self.message['text'] = ''
-        car_id = self.tree.item(self.tree.selection())['values'][0];
+        car_id = self.tree.item(self.tree.selection())['values'][0]
         self.ctrl.delete_car(car_id)
         self.message['text'] = 'Record {} deleted Successfully'.format(car_id)
         self.fill_cars_table()
@@ -208,23 +231,25 @@ class App:
         # name = self.tree.item(self.tree.selection())['text']
         # old_price = self.tree.item(self.tree.selection())['values'][0]
 
-        self.edit_wind = Toplevel()
-        self.edit_wind.title = 'Edit car'
+        self.edit_window = Toplevel()
+        self.edit_window.config(bg='white')
+        self.edit_window.title = 'Edit car'
 
-        car = self.tree.item(self.tree.selection())['values'];
+        car = self.tree.item(self.tree.selection())['values']
 
-
-        carForm = self.create_edit_car_form(self.edit_wind, {
+        carForm = self.create_edit_car_form(self.edit_window, {
             'brand': car[1],
             'model': car[2],
             'company': car[3],
             'price': car[4],
         })
 
-        Button(self.edit_wind, text='Update', command= lambda *args: self.submit_edit_car(car[0], carForm, self.edit_wind)).grid(row=5, column=0, sticky=W)
-        Button(self.edit_wind, text='Canell', command= lambda *args:  self.edit_wind.destroy()).grid(row=5, column=1, sticky=W)
+        Button(self.edit_window, text='Update', command=lambda *args: self.submit_edit_car(
+            car[0], carForm, self.edit_window)).grid(row=5, column=0, sticky=W)
+        Button(self.edit_window, text='Canell', command=lambda *args:
+               self.edit_window.destroy()).grid(row=5, column=1, sticky=W)
 
-        self.edit_wind.mainloop()
+        self.edit_window.mainloop()
 
     def submit_edit_car(self, carId, carForm, modal):
         carValue = self.normalize_form_value(self.pick_form_value(carForm))
@@ -239,11 +264,26 @@ class App:
         newBrand = brandModel.get()
         selectedBrand = h.findInArray(
             self.brands, lambda item: item.name == newBrand)
-        newModelsList = h.filterArr(self.models, lambda item: item.brand.id == selectedBrand.id)
+        newModelsList = h.filterArr(
+            self.models, lambda item: item.brand.id == selectedBrand.id)
 
         return newModelsList
 
+    def set_sort(self, column: str):
+        columnQ = h.safeget(self.q, 'sort', column)
+        direction = 'ASC' if columnQ == 'DESC' else 'DESC'
+        self.q['sort'] = {}
+        self.q['sort'][column] = direction
 
+        self.fill_cars_table()
+
+    def set_filter(self, column: str, filterV):
+        if filterV:
+            h.safeDictSet(self.q['filterParams'], filterV, column)
+        else:
+            self.q['filterParams'].pop('column', None)
+        
+        self.fill_cars_table()
 
     def update_options_list(self, control: OptionMenu, model: StringVar, newOptions: List):
         menu = control['menu']
@@ -252,9 +292,9 @@ class App:
             menu.add_command(label=string,
                              command=lambda value=string: model.set(value))
 
-    def create_edit_car_form(self, host, car=None, form: CarForm=CarForm()):
+    def create_edit_car_form(self, host, car=None, form: CarForm = CarForm()):
 
-         # # Brand Input
+        # # Brand Input
         Label(host, text='Brand: ').grid(row=1, column=0)
         form.brandModel = StringVar(host)
         form.brandCtrl = OptionMenu(host, form.brandModel, *h.items_to_names(
@@ -281,14 +321,15 @@ class App:
         form.priceCtrl.grid(row=4, column=1)
 
         if car:
-          form.brandModel.set(car['brand'])
-          form.companyModel.set(car['company'])
-          self.update_options_list(form.modelCtrl, form.carModelModel, self.pick_car_models(form.brandModel))
-          form.carModelModel.set(car['model'])
-          form.priceCtrl.delete(0,END)
-          form.priceCtrl.insert(0, car['price'])
+            form.brandModel.set(car['brand'])
+            form.companyModel.set(car['company'])
+            self.update_options_list(
+                form.modelCtrl, form.carModelModel, self.pick_car_models(form.brandModel))
+            form.carModelModel.set(car['model'])
+            form.priceCtrl.delete(0, END)
+            form.priceCtrl.insert(0, car['price'])
 
-        return form;
+        return form
 
     def pick_form_value(self, carForm):
         rawValue = {
@@ -297,7 +338,7 @@ class App:
             'company': carForm.companyModel.get(),
             'price': h.safe_cast(carForm.priceCtrl.get(), int, 0)
         }
-        return rawValue;
+        return rawValue
 
     def normalize_form_value(self, rawValue):
         fValue = {
@@ -306,9 +347,4 @@ class App:
             'company': h.findInArray(self.companies, lambda item: item.name == rawValue['company']).id,
             'price': rawValue['price']
         }
-        return fValue;
-
-          
-          
-
-
+        return fValue

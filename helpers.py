@@ -4,11 +4,48 @@ def safe_cast(val, to_type, default=None):
     except (ValueError, TypeError):
         return default
 
+
+def safeget(dct, *keys):
+    for key in keys:
+        try:
+            dct = dct[key]
+        except (KeyError, TypeError):
+            return None
+    return dct
+
+
+def safeDictSet(dct, value, *keys):
+    i = 0
+    for key in keys:
+        try:
+            if i == (len(keys) - 1):
+              dct[key] = value
+            else:  
+              test = dct[key]
+        except (KeyError, TypeError):
+            if i == (len(keys) - 1):
+              dct[key] = value
+            else:  
+              dct[key] = {}
+        i += 1
+    return value;
+
+def filterNoneInDict(dict):
+  return {k: v for k, v in dict.items() if v is not None}
+
+
 def items_to_names(items):
     newArr = []
     for item in items:
         newArr.append(item.name)
     return newArr
+
+
+def forEach(items, cb):
+    i = 0
+    for item in items:
+        cb(item, i)
+        i += 1
 
 
 def filterArr(items, predicate):
@@ -37,11 +74,3 @@ def findInArray(items, predicate):
             return item
         i += 1
     return
-
-def safeget(dct, *keys):
-    for key in keys:
-        try:
-            dct = dct[key]
-        except (KeyError, TypeError):
-            return None
-    return dct
